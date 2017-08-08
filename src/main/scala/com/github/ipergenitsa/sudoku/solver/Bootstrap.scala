@@ -6,6 +6,7 @@ import scala.io.Source
 
 object Bootstrap extends App {
   object const {
+    val blockSize = 3
     val size = 9
   }
 
@@ -67,15 +68,32 @@ object Game {
   }
 
   def nextStep(board: Board): Board = {
-    resolveNotValues(fillInNotValues(board))
+    resolveNotValues(fillInNotValues(fillInNotValuesByBlock(board)))
+  }
+
+  def fillInNotValuesByBlock(board: Board): Board = {
+    var filledBoard: Board = board
+    board.foreach { case (point, cell) =>
+        cell match {
+          case value: ValueCell =>
+            val xBlock = point.x / Bootstrap.const.blockSize
+            val yBlock = point.y / Bootstrap.const.blockSize
+            for (i <- 0 until 3; j <- 0 until 3) {
+              val key = Game.Point(xBlock * 3 + i, yBlock * 3 + j)
+              filledBoard = filledBoard.updated(key, filledBoard(key).addNotValue(value.number))
+            }
+          case _ =>
+        }
+    }
+    filledBoard
   }
 
   def fillInNotValues(board: Board): Board = {
     var filledBoard: Board = board
-    for (i <- 0 until 9; j <- 0 until 9) {
-      filledBoard(Game.Point(i, j)) match {
+    board.foreach { case (point, cell) =>
+      cell match {
         case value: ValueCell =>
-          filledBoard = Utils.fillNotValue(filledBoard, value.number, i, j)
+          filledBoard = Utils.fillNotValue(filledBoard, value.number, point.x, point.y)
         case _ =>
       }
     }
@@ -118,8 +136,12 @@ object Utils {
   def printBoard(board: Board): Unit = {
     for (i <- 0 until Bootstrap.const.size) {
       val row = (0 until Bootstrap.const.size).map(j => board(Game.Point(i, j)))
-        .map(_.getValue).mkString("")
-      println(row)
+      println(row.map(_.getValue).mkString(""))
     }
+    val emptyCells = board.count {_._2 match {
+      case _: EmptyCell => true
+      case _ => false
+    }}
+    println(emptyCells)
   }
 }
