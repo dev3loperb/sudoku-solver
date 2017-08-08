@@ -75,7 +75,7 @@ object Game {
     for (i <- 0 until 9; j <- 0 until 9) {
       filledBoard(Game.Point(i, j)) match {
         case value: ValueCell =>
-          filledBoard = Utils.fill(filledBoard, value.number, i, j)
+          filledBoard = Utils.fillNotValue(filledBoard, value.number, i, j)
         case _ =>
       }
     }
@@ -99,7 +99,7 @@ object Game {
 }
 
 object Utils {
-  def fill(board: Board, value: Int, x: Int, y: Int): Board = {
+  def fillNotValue(board: Board, value: Int, x: Int, y: Int): Board = {
     fillAux(board, value, x, y, 0)
   }
 
