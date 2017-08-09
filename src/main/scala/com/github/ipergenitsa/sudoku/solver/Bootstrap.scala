@@ -37,6 +37,7 @@ object Game {
     def addNotValue(notValue: Int): MultiLayerCell
     def getValue: String
     def getNonValues: Set[Int]
+    def hasValue: Boolean
   }
 
   class EmptyCell(val notValues: Set[Int] = Set()) extends MultiLayerCell {
@@ -47,6 +48,7 @@ object Game {
       case that: EmptyCell => notValues.equals(that.notValues)
       case _ => false
     }
+    val hasValue = false
   }
 
   class ValueCell(val number: Int, val notValues: Set[Int] = Set()) extends MultiLayerCell {
@@ -57,6 +59,7 @@ object Game {
       case that: ValueCell => number.equals(that number) && notValues.equals(that notValues)
       case _ => false
     }
+    val hasValue = true
   }
 
   def resolve(board: Board): Board = {
@@ -68,7 +71,7 @@ object Game {
   }
 
   def nextStep(board: Board): Board = {
-    resolveNotValues(fillInNotValues(fillInNotValuesByBlock(board)))
+    resolveNotValuesByEmptyCells(resolveNotValues(fillInNotValues(fillInNotValuesByBlock(board))))
   }
 
   def fillInNotValuesByBlock(board: Board): Board = {
@@ -102,17 +105,59 @@ object Game {
 
   private def resolveNotValues(board: Board): Board = {
     var updatedBoard: Board = board
-    for (i <- 0 until 9; j <- 0 until 9) {
-      updatedBoard(Game.Point(i, j)) match {
-        case emptyCell: EmptyCell =>
-          if (emptyCell.notValues.size == 8) {
-            val a: Int = (1 to 9).toSet.diff(emptyCell.notValues).head
-            updatedBoard = updatedBoard.updated(Game.Point(i, j), new ValueCell(a))
-          }
-        case _ =>
+    board.foreach { case (point, cell) =>
+        cell match {
+          case emptyCell: EmptyCell =>
+            if (emptyCell.notValues.size == 8) {
+              val valueToInsert = (1 to 9).toSet.diff(emptyCell.notValues).head
+              updatedBoard = updatedBoard.updated(point, new ValueCell(valueToInsert))
+            }
+          case _ =>
+        }
+    }
+    updatedBoard
+  }
+
+  private def resolveNotValuesByEmptyCells(board: Board): Board = {
+    var updatedBoard = board
+    for (i <- 0 until Bootstrap.const.size) {
+      val row = (0 until Bootstrap.const.size).map { j =>
+        val key = Game.Point(i, j)
+        key -> updatedBoard(key)
+      }
+      resolveNotValuesByEmptyCellsAux(row).foreach { itemToInsert =>
+        updatedBoard = updatedBoard.updated(itemToInsert._2._1, new ValueCell(itemToInsert._1))
+      }
+
+      val column = (0 until Bootstrap.const.size).map { j =>
+        val key = Game.Point(j, i)
+        key -> updatedBoard(key)
+      }
+      resolveNotValuesByEmptyCellsAux(column).foreach { itemToInsert =>
+        updatedBoard = updatedBoard.updated(itemToInsert._2._1, new ValueCell(itemToInsert._1))
+      }
+    }
+    for (i <- 0 until 3; j <- 0 until 3) {
+      val block = for {
+        k <- 0 until 3
+        n <- 0 until 3
+        x = 3 * i + k
+        y = 3 * j + n
+        key = Point(x, y)
+      } yield key -> updatedBoard(key)
+
+      resolveNotValuesByEmptyCellsAux(block).foreach { itemToInsert =>
+        updatedBoard = updatedBoard.updated(itemToInsert._2._1, new ValueCell(itemToInsert._1))
       }
     }
     updatedBoard
+  }
+
+  private def resolveNotValuesByEmptyCellsAux(cells: Seq[(Point, MultiLayerCell)]): Seq[(Int, (Point, MultiLayerCell))] = {
+    val emptyCells = cells.filterNot(_._2.hasValue)
+    (1 to 9).map { i =>
+      i -> emptyCells.filterNot(_._2.getNonValues.contains(i))
+    }.filter(_._2.size == 1).map(item => item._1 -> item._2.head)
   }
 }
 
