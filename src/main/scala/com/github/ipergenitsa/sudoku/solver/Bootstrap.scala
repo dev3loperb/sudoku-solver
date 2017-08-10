@@ -71,7 +71,9 @@ object Game {
   }
 
   def nextStep(board: Board): Board = {
-    resolveNotValuesByEmptyCells(resolveNotValues(fillInNotValues(fillInNotValuesByBlock(board))))
+    resolveNotValuesByEmptyCells(
+      fillInNotValues(fillInNotValuesByBlock(resolveNotValues(
+        fillInNotValues(fillInNotValuesByBlock(board))))))
   }
 
   def fillInNotValuesByBlock(board: Board): Board = {
@@ -110,7 +112,7 @@ object Game {
           case emptyCell: EmptyCell =>
             if (emptyCell.notValues.size == 8) {
               val valueToInsert = (1 to 9).toSet.diff(emptyCell.notValues).head
-              updatedBoard = updatedBoard.updated(point, new ValueCell(valueToInsert))
+              updatedBoard = fillInNotValues(fillInNotValuesByBlock(updatedBoard.updated(point, new ValueCell(valueToInsert))))
             }
           case _ =>
         }
@@ -126,7 +128,7 @@ object Game {
         key -> updatedBoard(key)
       }
       resolveNotValuesByEmptyCellsAux(row).foreach { itemToInsert =>
-        updatedBoard = updatedBoard.updated(itemToInsert._2._1, new ValueCell(itemToInsert._1))
+        updatedBoard = fillInNotValues(fillInNotValuesByBlock(updatedBoard.updated(itemToInsert._2._1, new ValueCell(itemToInsert._1))))
       }
 
       val column = (0 until Bootstrap.const.size).map { j =>
@@ -134,7 +136,7 @@ object Game {
         key -> updatedBoard(key)
       }
       resolveNotValuesByEmptyCellsAux(column).foreach { itemToInsert =>
-        updatedBoard = updatedBoard.updated(itemToInsert._2._1, new ValueCell(itemToInsert._1))
+        updatedBoard = fillInNotValues(fillInNotValuesByBlock(updatedBoard.updated(itemToInsert._2._1, new ValueCell(itemToInsert._1))))
       }
     }
     for (i <- 0 until 3; j <- 0 until 3) {
@@ -147,7 +149,7 @@ object Game {
       } yield key -> updatedBoard(key)
 
       resolveNotValuesByEmptyCellsAux(block).foreach { itemToInsert =>
-        updatedBoard = updatedBoard.updated(itemToInsert._2._1, new ValueCell(itemToInsert._1))
+        updatedBoard = fillInNotValues(fillInNotValuesByBlock(updatedBoard.updated(itemToInsert._2._1, new ValueCell(itemToInsert._1))))
       }
     }
     updatedBoard
