@@ -13,17 +13,17 @@ object Solver {
   type Board = Map[Point, Cell]
 
   def resolve(board: Board): Board = {
+    var currentBoard = board
     var nextBoard = nextStep(board)
-    while (!nextStep(nextBoard).equals(nextBoard)) {
+    while (!currentBoard.equals(nextBoard)) {
+      currentBoard = nextBoard
       nextBoard = nextStep(nextBoard)
     }
-    nextBoard
+    currentBoard
   }
 
   def nextStep(board: Board): Board = {
-    resolveNotValuesByEmptyCells(
-      fillInNotValues(fillInNotValuesByBlock(resolveNotValues(
-        fillInNotValues(fillInNotValuesByBlock(board))))))
+    resolveNotValuesByEmptyCells(fillInNotValues(fillInNotValuesByBlock(resolveNotValues(board))))
   }
 
   def fillInNotValuesByBlock(board: Board): Board = {
