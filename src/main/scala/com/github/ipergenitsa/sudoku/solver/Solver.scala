@@ -1,16 +1,13 @@
 package com.github.ipergenitsa.sudoku.solver
 
-import com.github.ipergenitsa.sudoku.solver.Solver.Board
+import com.github.ipergenitsa.sudoku.gamefield.{Cell, EmptyCell, ValueCell}
+import com.github.ipergenitsa.sudoku.{Board, Point}
 
 object Solver {
   object Const {
     val blockSize = 3
     val size = 9
   }
-
-  case class Point(x: Int, y: Int)
-
-  type Board = Map[Point, Cell]
 
   def resolve(board: Board): Board = {
     var currentBoard = board
@@ -34,7 +31,7 @@ object Solver {
           val xBlock = point.x / Solver.Const.blockSize
           val yBlock = point.y / Solver.Const.blockSize
           for (i <- 0 until 3; j <- 0 until 3) {
-            val key = Solver.Point(xBlock * 3 + i, yBlock * 3 + j)
+            val key = Point(xBlock * 3 + i, yBlock * 3 + j)
             filledBoard = filledBoard.updated(key, filledBoard(key).addNotValue(value.number))
           }
         case _ =>
@@ -74,7 +71,7 @@ object Solver {
     var updatedBoard = board
     for (i <- 0 until Solver.Const.size) {
       val row = (0 until Solver.Const.size).map { j =>
-        val key = Solver.Point(i, j)
+        val key = Point(i, j)
         key -> updatedBoard(key)
       }
       resolveNotValuesByEmptyCellsAux(row).foreach { itemToInsert =>
@@ -82,7 +79,7 @@ object Solver {
       }
 
       val column = (0 until Solver.Const.size).map { j =>
-        val key = Solver.Point(j, i)
+        val key = Point(j, i)
         key -> updatedBoard(key)
       }
       resolveNotValuesByEmptyCellsAux(column).foreach { itemToInsert =>
@@ -109,7 +106,7 @@ object Solver {
     val emptyCells = cells.filterNot(_._2.hasValue)
     (1 to 9).map { i =>
       i -> emptyCells.filterNot(_._2.getNonValues.contains(i))
-    }.filter(_._2.size == 1).map(item => item._1 -> item._2.head)
+    }.filter(_._2.lengthCompare(1) == 0).map(item => item._1 -> item._2.head)
   }
 }
 
@@ -122,42 +119,11 @@ object Utils {
     if (step > Solver.Const.size - 1 || step < 0) {
       board
     } else {
-      val xKey = Solver.Point(x, step)
-      val yKey = Solver.Point(step, y)
+      val xKey = Point(x, step)
+      val yKey = Point(step, y)
       val updatedBoard = board.updated(xKey, board(xKey).addNotValue(value))
         .updated(yKey, board(yKey).addNotValue(value))
       fillAux(updatedBoard, value, x, y, step + 1)
     }
-  }
-
-  def valueToCell(value: Int): Cell = {
-    value match {
-      case 0 => new EmptyCell
-      case notEmpty => new ValueCell(notEmpty)
-    }
-  }
-
-  def createBoard(input: Seq[Seq[Int]]): Board = {
-    def rowToBoard(row: Seq[Int], rowIndex: Int): Board = {
-      row.zipWithIndex.map {
-        case (element, index) => Solver.Point(rowIndex, index) -> element
-      }.foldLeft(Map(): Board)((board: Board, pointToElement) => {
-          board.updated(pointToElement._1, valueToCell(pointToElement._2))
-      })
-    }
-    input.zipWithIndex
-      .foldLeft(Map(): Board)((board, seq) => board ++ rowToBoard(seq._1, seq._2))
-  }
-
-  def printBoard(board: Board): Unit = {
-    for (i <- 0 until Solver.Const.size) {
-      val row = (0 until Solver.Const.size).map(j => board(Solver.Point(i, j)))
-      println(row.map(_.getValue).mkString(""))
-    }
-    val emptyCells = board.count {_._2 match {
-      case _: EmptyCell => true
-      case _ => false
-    }}
-    println(emptyCells)
   }
 }
